@@ -212,11 +212,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
 
     Overlay.of(context).insert(_overlayEntry);
+
     _controller.forward();
     _controller.addStatusListener((status) {
-      _overlayEntry.remove();
+      if (status == AnimationStatus.completed) {
+        _overlayEntry.remove();
 
-      _animateFromSmallCircleToLarge();
+        _animateFromSmallCircleToLarge();
+      }
     });
   }
 
@@ -260,8 +263,20 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
     _buttonExpandController.forward();
     _buttonExpandController.addStatusListener((status) {
-      expandingOverlay.remove();
-      Navigator.of(context).push(SecondScreen.route());
+      print('Status = $status');
+      if (status == AnimationStatus.completed) {
+        print('navigating');
+        Navigator.of(context).push(SecondScreen.route());
+
+        Future.delayed(Duration(milliseconds: 100), () {
+          expandingOverlay?.remove();
+          logInBtnOpacity = 1;
+
+          _buttonExpandController.reset();
+          _controller.reset();
+          _buttonSignInChild = buttonSignInNormal;
+        });
+      }
     });
   }
 
