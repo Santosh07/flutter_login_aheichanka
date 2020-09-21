@@ -2,27 +2,14 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 class MyHeaderDelegate extends SliverPersistentHeaderDelegate {
-  MyHeaderDelegate({this.minExtent, this.maxExtent});
+  Animation<double> entryAnimation;
 
-  static const avatarSizeMax = 48.0;
-  static const avatarSizeMin = 16.0;
+  MyHeaderDelegate({this.minExtent, this.maxExtent, this.entryAnimation});
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final topPadding = MediaQuery.of(context).padding.top;
     final shrinkPercentage = shrinkOffset / maxExtent;
-
-    Offset avatarOffset = _getAvatarOffset(shrinkPercentage);
-    double avatarSize = _getAvatarRadius(shrinkPercentage);
-    double greetingOpacity = _getGreetingOpacity(shrinkPercentage);
-    double monthTextOffset = _getMonthTextYPosition(shrinkPercentage);
-    Offset chevronLeftOffset = _getChevronLeftOffset(shrinkPercentage);
-    Offset chevronRightOffset = _getChevronRightOffset(shrinkPercentage);
-    Offset menuOffset = _getMenuOffset(shrinkPercentage);
-    Offset searchOffset = _getSearchOffset(shrinkPercentage);
-
-    Color backgroundColor = _getBackgroundColor(shrinkPercentage);
 
     return Container(
       //color: backgroundColor,
@@ -32,32 +19,93 @@ class MyHeaderDelegate extends SliverPersistentHeaderDelegate {
           fit: BoxFit.fitWidth,
         ),
       ),
+      child: AnimatedBuilder(
+        animation: entryAnimation,
+        builder: (context, child) {
+          return AppBarFlexibleHeaderWidget(
+            shrinkPercentage: shrinkPercentage,
+            entryOpacity: entryAnimation.value,
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  double maxExtent;
+
+  @override
+  double minExtent;
+
+  @override
+  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
+    return true;
+  }
+}
+
+class AppBarFlexibleHeaderWidget extends StatelessWidget {
+  AppBarFlexibleHeaderWidget(
+      {Key key, this.shrinkPercentage, this.entryOpacity})
+      : super(key: key);
+
+  final double shrinkPercentage;
+  final double entryOpacity;
+
+  final avatarSizeTween = Tween(begin: 88.0, end: 32.0);
+  final greetingOpacityTween = Tween(begin: 1.0, end: 0.0);
+  final menuAlignTween =
+      Tween(begin: Offset(-0.95, -0.75), end: Offset(-0.95, 0.6));
+  final searchAlignTween =
+      Tween(begin: Offset(0.95, -0.75), end: Offset(0.95, 0.6));
+  final monthTextYAlignTween = Tween(begin: 0.85, end: 0.35);
+  final leftChevronAlignTween =
+      Tween(begin: Offset(-0.95, 0.92), end: Offset(-0.45, 0.5));
+  final rightChevronAlignTween =
+      Tween(begin: Offset(0.95, 0.92), end: Offset(0.45, 0.5));
+
+  @override
+  Widget build(BuildContext context) {
+    Offset avatarOffset = _getAvatarOffset(shrinkPercentage);
+
+    return Opacity(
+      opacity: entryOpacity,
       child: Stack(
         children: [
           Align(
-            alignment: Alignment(searchOffset.dx, searchOffset.dy),
+            alignment: Alignment(
+                searchAlignTween.transform(shrinkPercentage).dx,
+                searchAlignTween.transform(shrinkPercentage).dy),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Icon(
-                Icons.search,
+              child: IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.search),
                 color: Colors.white60,
               ),
             ),
           ),
           Align(
-            alignment: Alignment(menuOffset.dx, menuOffset.dy),
+            alignment: Alignment(
+              menuAlignTween.transform(shrinkPercentage).dx,
+              menuAlignTween.transform(shrinkPercentage).dy,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Icon(
-                Icons.menu,
+              child: IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: Icon(Icons.menu),
                 color: Colors.white60,
               ),
             ),
           ),
           Align(
-            alignment: Alignment(0, -0.5),
+            alignment: Alignment(0, -0.4),
             child: Opacity(
-              opacity: greetingOpacity,
+              opacity: greetingOpacityTween
+                  .transform(shrinkPercentage * 2)
+                  .clamp(0.0, 1.0),
               child: Text(
                 'Good Morning!',
                 style: TextStyle(
@@ -69,31 +117,48 @@ class MyHeaderDelegate extends SliverPersistentHeaderDelegate {
           ),
           Align(
             alignment: Alignment(avatarOffset.dx, avatarOffset.dy),
-            child: CircleAvatar(
-              radius: avatarSize,
+            child: Container(
+              width: avatarSizeTween.transform(shrinkPercentage),
+              height: avatarSizeTween.transform(shrinkPercentage),
+              alignment: Alignment.center,
+              decoration:
+                  BoxDecoration(shape: BoxShape.circle, color: Colors.blue),
             ),
           ),
           Align(
-            alignment: Alignment(0, monthTextOffset),
+            alignment:
+                Alignment(0, monthTextYAlignTween.transform(shrinkPercentage)),
             child: Text(
               'FEBRUARY',
               style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
           ),
           Align(
-            alignment: Alignment(chevronLeftOffset.dx, chevronLeftOffset.dy),
-            child: Icon(
-              Icons.chevron_left,
-              size: 32,
-              color: Colors.white70,
+            alignment: Alignment(
+              leftChevronAlignTween.transform(shrinkPercentage).dx,
+              leftChevronAlignTween.transform(shrinkPercentage).dy,
+            ),
+            child: IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Icons.chevron_left,
+                size: 32,
+                color: Colors.white70,
+              ),
             ),
           ),
           Align(
-            alignment: Alignment(chevronRightOffset.dx, chevronRightOffset.dy),
-            child: Icon(
-              Icons.chevron_right,
-              size: 32,
-              color: Colors.white70,
+            alignment: Alignment(
+              rightChevronAlignTween.transform(shrinkPercentage).dx,
+              rightChevronAlignTween.transform(shrinkPercentage).dy,
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.chevron_right,
+                size: 32,
+                color: Colors.white70,
+              ),
+              onPressed: () {},
             ),
           )
         ],
@@ -107,61 +172,6 @@ class MyHeaderDelegate extends SliverPersistentHeaderDelegate {
     final yWithoutOffset = (-1.2 * math.pow(t, 2)) + (2.4 * t) - 0.2;
     final y = yWithoutOffset - (1.4 * shrinkPercentage);
 
-    return Offset(x * 0.77, -(y));
-  }
-
-  double _getAvatarRadius(double shrinkPercentage) {
-    double diff = (avatarSizeMax - avatarSizeMin) * shrinkPercentage;
-    return avatarSizeMax - diff;
-  }
-
-  double _getGreetingOpacity(double shrinkPercentage) {
-    return (1 - (shrinkPercentage * 2.0)).clamp(0.0, 1.0);
-  }
-
-  double _getMonthTextYPosition(double shrinkPercentage) {
-    return 0.85 - (0.45 * shrinkPercentage);
-  }
-
-  Offset _getChevronLeftOffset(double shrinkPercentage) {
-    double x = -0.95 + (0.5 * shrinkPercentage);
-    double y = 0.88 - (0.38 * shrinkPercentage);
-
-    return Offset(x, y);
-  }
-
-  Offset _getChevronRightOffset(double shrinkPercentage) {
-    double x = 0.95 - (0.5 * shrinkPercentage);
-    double y = 0.88 - (0.38 * shrinkPercentage);
-
-    return Offset(x, y);
-  }
-
-  Offset _getMenuOffset(double shrinkPercentage) {
-    double y = -0.75 + ((0.75 + 0.5) * shrinkPercentage);
-
-    return Offset(-0.95, y);
-  }
-
-  Offset _getSearchOffset(double shrinkPercentage) {
-    double y = -0.75 + ((0.75 + 0.5) * shrinkPercentage);
-
-    return Offset(0.95, y);
-  }
-
-  Color _getBackgroundColor(double shrinkPercentage) {
-    return ColorTween(begin: Colors.transparent, end: Colors.blue)
-        .transform((shrinkPercentage * 1.5).clamp(0.0, 1.0));
-  }
-
-  @override
-  double maxExtent;
-
-  @override
-  double minExtent;
-
-  @override
-  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
-    return true;
+    return Offset(x * 0.66, -(y));
   }
 }
